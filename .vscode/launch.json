@@ -1,0 +1,18 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Run Weather MCP",
+            "type": "debugpy",
+            "request": "launch",
+            "console": "integratedTerminal",
+            "program": "${workspaceFolder}/src/weather_mcp/main.py",
+            "justMyCode": true,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/src:${workspaceFolder}",
+                "ENV": "local"
+            },
+            "python": "${workspaceFolder}/.venv/bin/python"
+        }
+    ]
+}

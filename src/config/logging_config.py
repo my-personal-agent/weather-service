@@ -4,7 +4,7 @@ from pathlib import Path
 
 import yaml
 
-from config.settings import settings
+from config.settings_config import settings
 
 
 def deep_merge(base: dict, override: dict) -> dict:
