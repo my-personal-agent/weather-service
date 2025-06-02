@@ -1,0 +1,14 @@
+handlers:
+  console:
+    formatter: default
+
+  file:
+    formatter: default
+
+loggers:
+  app:
+    handlers: [console]
+
+root:
+  level: INFO
+  handlers: [console]
