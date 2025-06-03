@@ -1,0 +1,12 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "delay",
+            "type": "shell",
+            "command": "sleep",
+            "args": ["2"],
+            "group": "build"
+        }
+    ]
+}

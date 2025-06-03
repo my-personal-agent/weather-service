@@ -1,0 +1,65 @@
+pipeline {
+  agent {
+    kubernetes {
+      cloud "${params.TARGET_ENV}-cluster"
+      inheritFrom "helm-agent"
+      defaultContainer 'helm'
+    }
+  }
+
+  environment {
+    REGISTRY_PATH = "${env.DEPLOYED_REGISTRY_PATH}"
+    IMAGE_REPOSITORY = "${env.REGISTRY_PATH}/weather-${params.TARGET_TYPE}"
+    IMAGE_TAG = "${params.TARGET_ENV}"
+  }
+
+  stages {
+    stage('Check Helm CLI') {
+      steps {
+        sh 'helm version'
+      }
+    }
+
+    stage('Lint Server') {
+      steps {
+        withCredentials([file(credentialsId: "${params.TARGET_ENV}-kubeconfig", variable: 'KUBECONFIG')]) {
+          sh """
+            helm lint helm/${params.TARGET_TYPE} -f helm/${params.TARGET_TYPE}/values-${params.TARGET_ENV}.yaml
+          """
+        }
+      }
+    }
+
+    stage('Deploy Server') {
+      steps {
+        withCredentials([file(credentialsId: "${params.TARGET_ENV}-kubeconfig", variable: 'KUBECONFIG')]) {
+          sh """
+            helm upgrade --install weather-${params.TARGET_TYPE} helm/${params.TARGET_TYPE} \\
+              -n default \\
+              -f helm/${params.TARGET_TYPE}/values-${params.TARGET_ENV}.yaml \\
+              --set-string image.repository=${env.IMAGE_REPOSITORY} \\
+              --set-string image.tag=${env.IMAGE_TAG}
+          """
+        }
+      }
+    }
+  }
+
+  post {
+    success {
+      echo "${params.TARGET_TYPE} deployed to ${params.TARGET_ENV}"
+    }
+    failure {
+      withCredentials([file(credentialsId: "${params.TARGET_ENV}-kubeconfig", variable: 'KUBECONFIG')]) {
+        echo "Deployment failed for ${params.TARGET_TYPE} in ${params.TARGET_ENV}"
+        script {
+          def release = params.TARGET_SERVICE
+          echo "Attempting to rollback ${release} in namespace default"
+          sh """
+            helm rollback ${release} --namespace default || echo 'No rollback performed (maybe first install failed)'
+          """
+        }
+      }
+    }
+  }
+}

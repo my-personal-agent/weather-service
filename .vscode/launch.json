@@ -13,6 +13,29 @@
                 "ENV": "local"
             },
             "python": "${workspaceFolder}/.venv/bin/python"
+        },
+        {
+            "name": "Run Weather MCP Inspector",
+            "type": "debugpy",
+            "request": "launch",
+            "console": "integratedTerminal",
+            "program": "${workspaceFolder}/.venv/bin/mcp",
+            "args": ["dev", "src/weather_mcp/main.py"],
+            "justMyCode": true,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/src:${workspaceFolder}",
+                "ENV": "local"
+            },
+            "python": "${workspaceFolder}/.venv/bin/python",
+            "cwd": "${workspaceFolder}"
+        }
+    ],
+    "compounds": [
+        {
+            "name": "Run Weather MCP + Inspector",
+            "configurations": ["Run Weather MCP", "Run Weather MCP Inspector"],
+            "stopAll": true,
+            "preLaunchTask": "delay"
         }
     ]
 }

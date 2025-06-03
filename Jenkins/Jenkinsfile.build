@@ -1,0 +1,28 @@
+pipeline {
+  agent any
+
+  environment {
+    REGISTRY_PATH = "${env.REGISTRY_PATH}"
+    IMAGE_REPOSITORY = "${env.REGISTRY_PATH}/weather-${params.TARGET_TYPE}"
+    IMAGE_TAG = "${params.TARGET_ENV}"
+  }
+
+  stages {
+    stage('Build Docker Image') {
+      steps {
+        sh """
+          docker build \\
+            --build-arg ENV=${params.TARGET_ENV} \\
+            -t ${env.IMAGE_REPOSITORY}:${env.IMAGE_TAG} \\
+            -f Docker/Dockerfile.${params.TARGET_TYPE} .
+        """
+      }
+    }
+
+    stage('Push to Registry') {
+      steps {
+        sh "docker push ${env.IMAGE_REPOSITORY}:${env.IMAGE_TAG}"
+      }
+    }
+  }
+}

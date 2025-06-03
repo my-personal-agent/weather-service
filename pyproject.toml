@@ -27,3 +27,4 @@ pre-commit = "^4.2.0"
 black = "^25.1.0"
 ruff = "^0.11.12"
 mypy = "^1.16.0"
+mcp = {extras = ["cli"], version = "^1.9.2"}
