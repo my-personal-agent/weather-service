@@ -1,0 +1,35 @@
+replicaCount: 1
+
+image:
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 3001
+
+env:
+  LOG_TYPE: FILE
+  LOG_DIR: /logs
+  LOG_BACKUP_COUNT: "7"
+  LOG_LEVEL: INFO
+  OPENWEATHER_BASE_URL: https://api.openweathermap.org/data/2.5/weather
+  MCP_HOST: localhost
+  MCP_PORT: 3001
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+persistence:
+  enabled: true
+  accessMode: ReadWriteOnce
+  size: 1Gi
+  storageClassName: standard
+
+ingress:
+  enabled: false
+  host: ""

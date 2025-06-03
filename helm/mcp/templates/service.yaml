@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "weather-mcp.fullname" . }}
+  labels:
+    app.kubernetes.io/name: {{ include "weather-mcp.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app.kubernetes.io/version: "{{ .Chart.AppVersion }}"
+    helm.sh/chart: {{ include "weather-mcp.chart" . }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.port }}
+      protocol: TCP
+      name: weather-mcp
+  selector:
+    app.kubernetes.io/name: {{ include "weather-mcp.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}

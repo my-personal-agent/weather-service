@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "weather-mcp.fullname" . }}
+  labels:
+    app.kubernetes.io/name: {{ include "weather-mcp.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app.kubernetes.io/version: "{{ .Chart.AppVersion }}"
+    helm.sh/chart: {{ include "weather-mcp.chart" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "weather-mcp.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "weather-mcp.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: weather-mcp
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.service.port }}
+              name: weather-mcp
+          env:
+            {{- range $key, $value := .Values.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            {{- range $key, $secretName := .Values.secrets }}
+            - name: {{ $key }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "weather-mcp.fullname" $ }}
+                  key: {{ $key }}
+            {{- end }}
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.service.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
+            successThreshold: 1
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.service.port }}
+            initialDelaySeconds: 10
+            periodSeconds: 20
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: weather-mcp-storage
+              mountPath: /var/lib/weather-mcp/data
+            - name: logging-config
+              mountPath: /app/config/logging/logging.yaml
+              subPath: logging.yaml
+            - name: logging-config
+              mountPath: /app/config/logging/logging.{{ .Values.env.ENV }}.yaml
+              subPath: logging.{{ .Values.env.ENV }}.yaml
+      volumes:
+        - name: weather-mcp-storage
+          persistentVolumeClaim:
+            claimName: {{ include "weather-mcp.fullname" . }}-pvc
+        - name: logging-config
+          configMap:
+            name: weather-mcp-config
+            items:
+              - key: logging.yaml
+                path: logging.yaml
+              - key: logging.{{ .Values.env.ENV }}.yaml
+                path: logging.{{ .Values.env.ENV }}.yaml

@@ -1,0 +1,9 @@
+image:
+  pullPolicy: Always
+
+secrets:
+  OPENWEATHER_API_KEY: 12c03fe2f7176bdaf00410ae460fac2c
+
+ingress:
+  enabled: true
+  host: weather-mcp.dev1.example.com

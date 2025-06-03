@@ -22,7 +22,7 @@ repos:
       - id: check-added-large-files
       - id: check-json
       - id: check-yaml
-        exclude: ^templates/
+        exclude: ^helm/mcp/templates/
       - id: debug-statements
       - id: check-ast
 
