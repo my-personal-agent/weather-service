@@ -12,7 +12,8 @@ env:
   LOG_DIR: /logs
   LOG_BACKUP_COUNT: "7"
   LOG_LEVEL: INFO
-  OPENWEATHER_BASE_URL: https://api.openweathermap.org/data/2.5/weather
+  OPENWEATHER_BASE_URL: https://api.openweathermap.org/data/2.5
+  OPENWEATHER_GEO_BASE_URL: http://api.openweathermap.org/geo/1.0
   MCP_HOST: localhost
   MCP_PORT: 3001
 

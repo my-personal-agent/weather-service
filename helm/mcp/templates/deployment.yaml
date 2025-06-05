@@ -39,21 +39,21 @@ spec:
                   name: {{ include "weather-mcp.fullname" $ }}
                   key: {{ $key }}
             {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: {{ .Values.service.port }}
+            initialDelaySeconds: 10
+            periodSeconds: 20
+            failureThreshold: 3
           readinessProbe:
             httpGet:
-              path: /health
+              path: /readyz
               port: {{ .Values.service.port }}
             initialDelaySeconds: 5
             periodSeconds: 10
             failureThreshold: 3
             successThreshold: 1
-          livenessProbe:
-            httpGet:
-              path: /health
-              port: {{ .Values.service.port }}
-            initialDelaySeconds: 10
-            periodSeconds: 20
-            failureThreshold: 3
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:

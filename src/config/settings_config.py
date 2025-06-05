@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     env: str
     openweather_api_key: str
     openweather_base_url: str
+    openweather_geo_base_url: str
     mcp_host: str
     mcp_port: int
 

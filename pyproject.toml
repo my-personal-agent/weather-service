@@ -1,30 +1,31 @@
-[project]
+[tool.poetry]
 name = "weather"
 version = "0.1.0"
 description = ""
-authors = [
-    {name = "Wai Yan Min Khaing",email = "waiyanminkhaing1997@gmail.com"}
-]
+authors = ["Wai Yan Min Khaing <waiyanminkhaing1997@gmail.com>"]
 readme = "README.md"
-requires-python = ">=3.10,<4.0"
 packages = [
     { include = "weather_mcp", from = "src" },
-    { include = "config", from = "src" }
-]
-dependencies = [
-    "langchain-mcp-adapters (>=0.1.4,<0.2.0)",
-    "python-json-logger (>=3.3.0,<4.0.0)",
-    "httpx (>=0.28.1,<0.29.0)",
+    { include = "config", from = "src" },
+    { include = "enums", from = "src" },
+    { include = "utils", from = "src" }
 ]
 
-
-[build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
-build-backend = "poetry.core.masonry.api"
+[tool.poetry.dependencies]
+python = ">=3.10,<4.0"
+langchain-mcp-adapters = ">=0.1.4,<0.2.0"
+python-json-logger = ">=3.3.0,<4.0.0"
+httpx = ">=0.28.1,<0.29.0"
+prometheus-client = "^0.22.1"
+psutil = "^7.0.0"
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^4.2.0"
 black = "^25.1.0"
 ruff = "^0.11.12"
 mypy = "^1.16.0"
-mcp = {extras = ["cli"], version = "^1.9.2"}
+mcp = { extras = ["cli"], version = "^1.9.2" }
+
+[build-system]
+requires = ["poetry-core>=1.5.0"]
+build-backend = "poetry.core.masonry.api"
