@@ -6,6 +6,7 @@ image:
 service:
   type: ClusterIP
   port: 3001
+  targetPort: 3001
 
 env:
   LOG_TYPE: FILE
@@ -34,3 +35,42 @@ persistence:
 ingress:
   enabled: false
   host: ""
+
+monitoring:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    interval: 15s
+    scrapeTimeout: 10s
+    port: http
+  prometheusRule:
+    enabled: true
+    alerts:
+      - alert: WeatherMCPDown
+        expr: 'up{job=~".*weather.*"} == 0'
+        for: 2m
+        severity: critical
+        summary: "Weather MCP is down"
+        description: "Weather MCP instance is unreachable for 2 minutes."
+
+      - alert: WeatherMCPUnready
+        expr: 'kube_pod_container_status_ready{container="weather-mcp"} == 0'
+        for: 2m
+        severity: warning
+        summary: "Weather MCP pod is not ready"
+        description: "Weather MCP pod has been unready for more than 2 minutes."
+
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  useCpu: true
+  targetCPUUtilizationPercentage: 70
+  custom:
+    enabled: true
+    metrics:
+      - name: http_requests_per_second
+        averageValue: "10"
+      - name: latency_milliseconds
+        averageValue: "200"

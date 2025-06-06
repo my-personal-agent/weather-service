@@ -4,11 +4,7 @@ kind: PersistentVolumeClaim
 metadata:
   name: {{ include "weather-mcp.fullname" . }}-pvc
   labels:
-    app.kubernetes.io/name: {{ include "weather-mcp.name" . }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/managed-by: {{ .Release.Service }}
-    app.kubernetes.io/version: "{{ .Chart.AppVersion }}"
-    helm.sh/chart: {{ include "weather-mcp.chart" . }}
+    {{- include "weather-mcp.labels" . | nindent 4 }}
   annotations:
     "helm.sh/resource-policy": keep
 spec:

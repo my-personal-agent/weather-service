@@ -1,0 +1,29 @@
+{{- if and .Values.monitoring.prometheusRule.enabled .Values.monitoring.prometheusRule.alerts }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "weather-mcp.fullname" . }}-rules
+  labels:
+    release: prometheus
+    {{- include "weather-mcp.labels" . | nindent 4 }}
+spec:
+  groups:
+    - name: {{ include "weather-mcp.fullname" . }}.rules
+      rules:
+        {{- range .Values.monitoring.prometheusRule.alerts }}
+        - alert: {{ .alert }}
+          expr: {{ .expr | quote }}
+          for: {{ .for | default "1m" }}
+          labels:
+            severity: {{ .severity | default "warning" }}
+            service: {{ $.Chart.Name }}
+          annotations:
+            summary: {{ .summary | default (printf "%s alert triggered" .alert) | quote }}
+            description: {{ .description | default (printf "Alert '%s' is firing." .alert) | quote }}
+        {{- end }}
+        - record: http_requests_per_second
+          expr: sum(rate(http_requests_total{job="weather-mcp"}[1m])) by (pod)
+
+        - record: latency_milliseconds
+          expr: histogram_quantile(0.9, sum(rate(http_request_duration_seconds_bucket{job="weather-mcp"}[1m])) by (le, pod)) * 1000
+{{- end }}

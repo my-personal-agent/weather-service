@@ -3,18 +3,13 @@ kind: Service
 metadata:
   name: {{ include "weather-mcp.fullname" . }}
   labels:
-    app.kubernetes.io/name: {{ include "weather-mcp.name" . }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/managed-by: {{ .Release.Service }}
-    app.kubernetes.io/version: "{{ .Chart.AppVersion }}"
-    helm.sh/chart: {{ include "weather-mcp.chart" . }}
+    {{- include "weather-mcp.labels" . | nindent 4 }}
 spec:
-  type: {{ .Values.service.type }}
+  type: {{ .Values.service.type | default "ClusterIP" }}
   ports:
-    - port: {{ .Values.service.port }}
-      targetPort: {{ .Values.service.port }}
+    - name: http
+      port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.targetPort }}
       protocol: TCP
-      name: weather-mcp
   selector:
-    app.kubernetes.io/name: {{ include "weather-mcp.name" . }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
+    {{- include "weather-mcp.selectorLabels" . | nindent 4 }}
