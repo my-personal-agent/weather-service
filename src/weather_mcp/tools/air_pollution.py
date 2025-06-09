@@ -1,16 +1,75 @@
 import logging
+from typing import Annotated, Any
 
+from mcp.server.fastmcp import Context
+from pydantic import Field
+
+from core.annotated import (
+    ANNOTATED_CITY,
+    ANNOTATED_COUNTRY_CODE,
+    ANNOTATED_LAT,
+    ANNOTATED_LON,
+    ANNOTATED_STATE_CODE,
+)
 from enums.openweather import OpenWeatherEndpoint
-from core.http_client import call_openweather_api
 from weather_mcp.server import mcp
-from weather_mcp.tools.geocoding import get_direct_geo_by_location
-from weather_mcp.utils import check_geo, handle_error
+from weather_mcp.tools.geocoding import _get_geo_by_location
+from weather_mcp.utils import call_openweather_api
 
 logger = logging.getLogger(__name__)
 
 
+ANNOTATED_START = Annotated[
+    int,
+    Field(
+        ge=0,
+        description="Start date as Unix timestamp (inclusive)",
+    ),
+]
+
+ANNOTATED_END = Annotated[
+    int,
+    Field(
+        ge=0,
+        description="End date as Unix timestamp (inclusive, max 1 year from start)",
+    ),
+]
+
+
+async def _get_current_air_pollution_by_geo(
+    lat: float, lon: float, mcp_ctx: Context
+) -> dict[str, Any]:
+    params = {"lat": lat, "lon": lon}
+    return await call_openweather_api(
+        OpenWeatherEndpoint.CURRENT_AIR_POLLUTION, params, mcp_ctx=mcp_ctx
+    )
+
+
+async def _get_forecast_air_pollution_by_geo(
+    lat: float, lon: float, mcp_ctx: Context
+) -> dict[str, Any]:
+    params = {"lat": lat, "lon": lon}
+    return await call_openweather_api(
+        OpenWeatherEndpoint.FORECAST_AIR_POLLUTION, params, mcp_ctx=mcp_ctx
+    )
+
+
+async def _get_historical_air_pollution_by_geo(
+    lat: float, lon: float, start: int, end: int, mcp_ctx: Context
+) -> dict[str, Any]:
+    params = {"lat": lat, "lon": lon, "start": start, "end": end}
+
+    return await call_openweather_api(
+        OpenWeatherEndpoint.HISTORICAL_AIR_POLLUTION, params, mcp_ctx=mcp_ctx
+    )
+
+
 @mcp.tool()
-async def get_current_air_pollution_by_geo(lat: float, lon: float) -> dict:
+async def get_current_air_pollution_by_geo(
+    ctx: Context,
+    lat: ANNOTATED_LAT,
+    lon: ANNOTATED_LON,
+) -> dict[str, Any]:
     """
     **Function Description**
     Retrieves current air quality and pollution data for a specific geographic location.
@@ -85,20 +144,16 @@ async def get_current_air_pollution_by_geo(lat: float, lon: float) -> dict:
     - Real estate: Inform buyers about air quality in different neighborhoods
     - Fitness apps: Recommend indoor/outdoor activities based on air quality
     """
-    check_geo(lat, lon)
-    params = {"lat": lat, "lon": lon}
-    try:
-        return await call_openweather_api(
-            OpenWeatherEndpoint.CURRENT_AIR_POLLUTION, params
-        )
-    except Exception as e:
-        raise handle_error(e)
+    return await _get_current_air_pollution_by_geo(lat, lon, ctx)
 
 
 @mcp.tool()
 async def get_current_air_pollution_by_city(
-    city: str, state_code: str, country_code: str
-) -> dict:
+    ctx: Context,
+    city: ANNOTATED_CITY,
+    state_code: ANNOTATED_STATE_CODE,
+    country_code: ANNOTATED_COUNTRY_CODE,
+) -> dict[str, Any]:
     """
     **Function Description**
     Retrieves current air quality data for a city by name. This is a convenience function
@@ -178,14 +233,27 @@ async def get_current_air_pollution_by_city(
     - Educational tools: Teaching about global air quality patterns
     - News and media: Reporting on air quality conditions in major cities
     """
-    geo_data = await get_direct_geo_by_location(city, state_code, country_code, limit=1)
+    geo_data = await _get_geo_by_location(
+        city=city,
+        state_code=state_code,
+        country_code=country_code,
+        limit=1,
+        mcp_ctx=ctx,
+    )
 
-    lat, lon = geo_data[0]["lat"], geo_data[0]["lon"]
-    return await get_current_air_pollution_by_geo(lat, lon)
+    first_result = geo_data[0]  # type: ignore
+    lat: float = first_result["lat"]
+    lon: float = first_result["lon"]
+
+    return await _get_current_air_pollution_by_geo(lat=lat, lon=lon, mcp_ctx=ctx)
 
 
 @mcp.tool()
-async def get_forecast_air_pollution_by_geo(lat: float, lon: float) -> dict:
+async def get_forecast_air_pollution_by_geo(
+    ctx: Context,
+    lat: ANNOTATED_LAT,
+    lon: ANNOTATED_LON,
+) -> dict[str, Any]:
     """
     **Function Description**
     Retrieves air quality forecast data for a specific geographic location.
@@ -274,20 +342,16 @@ async def get_forecast_air_pollution_by_geo(lat: float, lon: float) -> dict:
     - Environmental compliance: Predict when pollution levels may exceed thresholds
     - Sports scheduling: Plan outdoor sports events for optimal air quality conditions
     """
-    check_geo(lat, lon)
-    params = {"lat": lat, "lon": lon}
-    try:
-        return await call_openweather_api(
-            OpenWeatherEndpoint.FORECAST_AIR_POLLUTION, params
-        )
-    except Exception as e:
-        raise handle_error(e)
+    return await _get_forecast_air_pollution_by_geo(lat, lon, mcp_ctx=ctx)
 
 
 @mcp.tool()
 async def get_forecast_air_pollution_by_city(
-    city: str, state_code: str, country_code: str
-) -> dict:
+    ctx: Context,
+    city: ANNOTATED_CITY,
+    state_code: ANNOTATED_STATE_CODE,
+    country_code: ANNOTATED_COUNTRY_CODE,
+) -> dict[str, Any]:
     """
     **Function Description**
     Retrieves air quality forecast data for a city by name within a 5-day timeframe.
@@ -373,16 +437,25 @@ async def get_forecast_air_pollution_by_city(
     - Media and journalism: Report on upcoming air quality conditions in major cities
     - International events: Plan conferences, sports events based on air quality forecasts
     """
-    geo_data = await get_direct_geo_by_location(city, state_code, country_code, limit=1)
+    geo_data = await _get_geo_by_location(
+        city, state_code, country_code, limit=1, mcp_ctx=ctx
+    )
 
-    lat, lon = geo_data[0]["lat"], geo_data[0]["lon"]
-    return await get_forecast_air_pollution_by_geo(lat, lon)
+    first_result = geo_data[0]  # type: ignore
+    lat: float = first_result["lat"]
+    lon: float = first_result["lon"]
+
+    return await _get_forecast_air_pollution_by_geo(lat, lon, mcp_ctx=ctx)
 
 
 @mcp.tool()
 async def get_historical_air_pollution_by_geo(
-    lat: float, lon: float, start: int, end: int
-) -> dict:
+    ctx: Context,
+    lat: ANNOTATED_LAT,
+    lon: ANNOTATED_LON,
+    start: ANNOTATED_START,
+    end: ANNOTATED_END,
+) -> dict[str, Any]:
     """
     **Function Description**
     Retrieves historical air quality and pollution data for a specific geographic location
@@ -480,19 +553,17 @@ async def get_historical_air_pollution_by_geo(
     - Academic research: Environmental science and public health policy studies
     - Policy evaluation: Assess effectiveness of pollution control measures over time
     """
-    check_geo(lat, lon)
-    params = {"lat": lat, "lon": lon, "start": start, "end": end}
-    try:
-        return await call_openweather_api(
-            OpenWeatherEndpoint.HISTORICAL_AIR_POLLUTION, params
-        )
-    except Exception as e:
-        raise handle_error(e)
+    return await _get_historical_air_pollution_by_geo(lat, lon, start, end, mcp_ctx=ctx)
 
 
 @mcp.tool()
 async def get_historical_air_pollution_by_city(
-    city: str, state_code: str, country_code: str, start: int, end: int
+    ctx: Context,
+    city: ANNOTATED_CITY,
+    state_code: ANNOTATED_STATE_CODE,
+    country_code: ANNOTATED_COUNTRY_CODE,
+    start: ANNOTATED_START,
+    end: ANNOTATED_END,
 ) -> dict:
     """
     **Function Description**
@@ -598,7 +669,12 @@ async def get_historical_air_pollution_by_city(
     - Climate change research: Study long-term pollution trends in urban areas
     - Investment analysis: Assess environmental factors for real estate and business investments
     """
-    geo_data = await get_direct_geo_by_location(city, state_code, country_code, limit=1)
+    geo_data = await _get_geo_by_location(
+        city, state_code, country_code, limit=1, mcp_ctx=ctx
+    )
 
-    lat, lon = geo_data[0]["lat"], geo_data[0]["lon"]
-    return await get_historical_air_pollution_by_geo(lat, lon, start, end)
+    first_result = geo_data[0]  # type: ignore
+    lat: float = first_result["lat"]
+    lon: float = first_result["lon"]
+
+    return await _get_historical_air_pollution_by_geo(lat, lon, start, end, mcp_ctx=ctx)

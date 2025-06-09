@@ -1,15 +1,29 @@
 import logging
+from typing import Any
 
+from mcp.server.fastmcp import Context
+
+from core.annotated import (
+    ANNOTATED_CITY,
+    ANNOTATED_LANG,
+    ANNOTATED_LAT,
+    ANNOTATED_LON,
+    ANNOTATED_OPTIONAL_COUNTRY_CODE,
+)
 from enums.openweather import OpenWeatherEndpoint
-from core.http_client import call_openweather_api
 from weather_mcp.server import mcp
-from weather_mcp.utils import check_geo, handle_error
+from weather_mcp.utils import call_openweather_api
 
 logger = logging.getLogger(__name__)
 
 
 @mcp.tool()
-async def get_current_weather_by_geo(lat: float, lon: float, lang: str = "en") -> dict:
+async def get_current_weather_by_geo(
+    ctx: Context,
+    lat: ANNOTATED_LAT,
+    lon: ANNOTATED_LON,
+    lang: ANNOTATED_LANG = "en",
+) -> dict[str, Any]:
     """
     Get current weather conditions for a specific geographic location using latitude and longitude coordinates.
 
@@ -41,8 +55,8 @@ async def get_current_weather_by_geo(lat: float, lon: float, lang: str = "en") -
 
     **Raises:**
         ValueError: If coordinates are out of valid range (-90≤lat≤90, -180≤lon≤180)
-        APIError: If OpenWeatherMap API returns error status
-        NetworkError: If network request fails or times out
+        ToolError: If OpenWeatherMap API returns error status
+        ToolError: If network request fails or times out
 
     **Usage Examples:**
         # Get weather for Tokyo, Japan
@@ -79,18 +93,19 @@ async def get_current_weather_by_geo(lat: float, lon: float, lang: str = "en") -
         - Event planning platforms checking weather conditions
         - Logistics apps for weather-dependent operations
     """
-    check_geo(lat, lon)
     params = {"lat": lat, "lon": lon, "lang": lang}
-    try:
-        return await call_openweather_api(OpenWeatherEndpoint.CURRENT_WEATHER, params)
-    except Exception as e:
-        raise handle_error(e)
+    return await call_openweather_api(
+        OpenWeatherEndpoint.CURRENT_WEATHER, params, mcp_ctx=ctx
+    )
 
 
 @mcp.tool()
 async def get_current_weather_by_city(
-    city: str, country_code: str | None = None, lang: str = "en"
-) -> dict:
+    ctx: Context,
+    city: ANNOTATED_CITY,
+    country_code: ANNOTATED_OPTIONAL_COUNTRY_CODE = None,
+    lang: ANNOTATED_LANG = "en",
+) -> dict[str, Any]:
     """
     Get current weather conditions for a city by name, with optional country specification.
 
@@ -103,10 +118,10 @@ async def get_current_weather_by_city(
         city (str): City name (e.g., "London", "New York", "São Paulo", "東京").
                    Case-insensitive, supports Unicode characters and diacritics.
                    Can include state/province for US/CA cities (e.g., "Austin,TX").
-        country_code (str | None, optional): ISO 3166-1 alpha-2 country code (e.g., "US", "GB", "JP").
-                                           Strongly recommended for cities with duplicate names.
-                                           Helps ensure forecast accuracy for intended location.
-                                           Defaults to None (global search, returns best match).
+        country_code (Optional[str], optional): ISO 3166-1 alpha-2 country code (e.g., "US", "GB", "JP").
+                                               Strongly recommended for cities with duplicate names.
+                                               Helps ensure forecast accuracy for intended location.
+                                               Defaults to None (global search, returns best match).
         lang (str, optional): Language code for weather descriptions. Defaults to "en" (English).
                               Supports 40+ languages: en, es, fr, de, it, pt, ru, ja, zh_cn, zh_tw,
                               ar, bg, ca, cz, da, el, fa, fi, gl, he, hi, hr, hu, kr, la, lt, lv,
@@ -126,12 +141,11 @@ async def get_current_weather_by_city(
             - id: City ID for future reference
 
     **Raises:**
-        CityNotFoundError: If city name cannot be resolved, doesn't exist, or is ambiguous
-        CountryCodeError: If country_code format is invalid (not 2-letter ISO code)
-        APIError: If OpenWeatherMap API returns error status
-        NetworkError: If network request fails or times out
-        ValidationError: If city name is empty, too short, or contains invalid characters
-        AmbiguousLocationError: If multiple cities match and no country_code provided
+        ValueError: If city name is empty, too short, or contains invalid characters
+        ValueError: If country_code format is invalid (not 2-letter ISO code)
+        ToolError: If city name cannot be resolved, doesn't exist, or is ambiguous
+        ToolError: If OpenWeatherMap API returns error status
+        ToolError: If network request fails or times out
 
     **Usage Examples:**
         # Basic city lookup
@@ -177,11 +191,8 @@ async def get_current_weather_by_city(
         - Event management platforms for venue weather checking
     """
     location = f"{city},{country_code}" if country_code else city
-
     params = {"q": location, "lang": lang}
 
-    try:
-        return await call_openweather_api(OpenWeatherEndpoint.CURRENT_WEATHER, params)
-
-    except Exception as e:
-        raise handle_error(e)
+    return await call_openweather_api(
+        OpenWeatherEndpoint.CURRENT_WEATHER, params, mcp_ctx=ctx
+    )

@@ -1,42 +1,112 @@
+import logging
+from typing import Any
+
 import httpx
+from mcp.server.fastmcp import Context
 from mcp.server.fastmcp.exceptions import ToolError
 
+from config.settings_config import get_settings
+from enums.openweather import OpenWeatherEndpoint
 
-def handle_error(error) -> ToolError:
+logger = logging.getLogger(__name__)
+
+
+async def call_openweather_api(
+    endpoint: OpenWeatherEndpoint,
+    params: dict[str, Any],
+    mcp_ctx: Context,
+) -> dict[str, Any]:
     """
-    Handles errors from the OpenWeather API calls and raises appropriate ToolError.
+    Calls the specified OpenWeatherMap API endpoint with given query parameters.
 
     Args:
-        error (httpx.RequestError or httpx.HTTPStatusError): The error raised by the HTTP client.
+        endpoint (OpenWeatherEndpoint): Enum value representing the API endpoint to call
+                                        (e.g., OpenWeatherEndpoint.WEATHER or FORECAST).
+        params (dict): Query parameters for the API call. Do NOT include 'appid' or 'units';
+                       these will be added automatically.
+        mcp_ctx (Context): MCP context for logging or other purposes.
+
+    Returns:
+        dict: Parsed JSON response from the OpenWeather API.
 
     Raises:
-        ToolError: Custom error with a user-friendly message.
+        httpx.HTTPStatusError: If the API responds with a 4xx or 5xx error.
+        httpx.RequestError: If the request fails due to network issues, timeouts, etc.
     """
-    if isinstance(error, httpx.HTTPStatusError):
-        if error.response.status_code == 404:
-            return ToolError("Weather data not found for the given location.")
+    # logging the call
+    await mcp_ctx.info("Calling OpenWeather API", params=params)
 
-        return ToolError("Weather service returned an error. Try again later.")
+    # Construct full URL to the specific OpenWeather endpoint
+    url = (
+        get_settings().openweather_geo_base_url
+        if endpoint
+        in [OpenWeatherEndpoint.DIRECT_GEOCODING, OpenWeatherEndpoint.REVERSE_GEOCODING]
+        else get_settings().openweather_base_url
+    )
+    url = f"{url.rstrip('/')}/{endpoint.value}"
 
-    elif isinstance(error, httpx.RequestError):
-        return ToolError("Weather service is currently unreachable.")
+    # Copy original params to avoid mutating caller input
+    user_params = params.copy()
 
-    return ToolError("An unexpected error occurred.")
+    # Add API key and default units
+    user_params["appid"] = get_settings().openweather_api_key
+    user_params.setdefault("units", "metric")
 
+    # report initial progress
+    await mcp_ctx.report_progress(
+        10, total=100, message="Preparing OpenWeather API request"
+    )
 
-def check_geo(lat: float, lon: float):
-    """
-    Validates geographic coordinates.
+    try:
+        # Log outbound request
+        logger.info(f"Calling OpenWeather API [{endpoint.value}] with params: {params}")
 
-    Args:
-        lat (float): Latitude value.
-        lon (float): Longitude value.
+        # report progress for API call
+        await mcp_ctx.report_progress(
+            30, total=100, message="Calling OpenWeather API request"
+        )
 
-    Raises:
-        ToolError: If latitude is not between -90.0 and 90.0, or longitude is not between -180.0 and 180.0.
-    """
-    if not -90.0 <= lat <= 90.0:
-        raise ToolError(f"Latitude must be between -90.0 and 90.0, got {lat}")
+        # Make async GET request to the API
+        async with httpx.AsyncClient(timeout=2.0) as client:
+            response = await client.get(url, params=user_params)
 
-    if not -180.0 <= lon <= 180.0:
-        raise ToolError(f"Longitude must be between -180.0 and 180.0, got {lon}")
+            # report progress for API response
+            await mcp_ctx.report_progress(
+                80, total=100, message="OpenWeather API request completed"
+            )
+
+            # Raise error for any HTTP response with 4xx or 5xx status
+            response.raise_for_status()
+
+            # get JSON response
+            data = response.json()
+
+            # log and report progress for successful response
+            await mcp_ctx.info("OpenWeather API response", data=data)
+            await mcp_ctx.report_progress(
+                100, total=100, message="OpenWeather API call successful"
+            )
+            logger.info(f"OpenWeather API [{endpoint.value}] response: {data}")
+
+            # Return parsed JSON data
+            return data
+
+    except httpx.HTTPStatusError as e:
+        # Log HTTP error response
+        logger.warning(
+            f"OpenWeather API error {e.response.status_code}: {e.response.text}"
+        )
+        await mcp_ctx.warning(
+            f"OpenWeather API error {e.response.status_code}: {e.response.text}"
+        )
+        if e.response.status_code == 404:
+            raise ToolError("Weather data not found for the given location.")
+
+        raise ToolError("Weather service returned an error. Try again later.")
+
+    except httpx.RequestError as e:
+        # Log network or connection error
+        logger.error(f"OpenWeather API request error {url}: {e}")
+        await mcp_ctx.error(f"OpenWeather API request error: {e}")
+
+        raise ToolError("An unexpected error occurred.")

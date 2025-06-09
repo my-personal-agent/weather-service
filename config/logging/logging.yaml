@@ -5,7 +5,7 @@ formatters:
   default:
     format: "[%(asctime)s] [%(levelname)s] %(name)s: %(message)s"
   json:
-    class: pythonjsonlogger.jsonlogger.JsonFormatter
+    class: pythonjsonlogger.json.JsonFormatter
     format: "%(asctime)s %(levelname)s %(name)s %(message)s"
 
 handlers:

@@ -5,13 +5,13 @@ import os
 logger = logging.getLogger(__name__)
 
 # Get the absolute path to this directory
-tools_dir = os.path.dirname(__file__)
+custom_routes_dir = os.path.dirname(__file__)
 
 # Track successfully registered modules
 registered_modules = []
 
 # Loop through all Python files in this directory
-for filename in os.listdir(tools_dir):
+for filename in os.listdir(custom_routes_dir):
     # Only consider .py files excluding __init__.py and hidden files
     if (
         filename.endswith(".py")

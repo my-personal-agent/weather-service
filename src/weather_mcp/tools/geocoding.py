@@ -1,29 +1,56 @@
 import logging
+from typing import Annotated, Any, Optional
 
+from mcp.server.fastmcp import Context
+from pydantic import Field
+
+from core.annotated import (
+    ANNOTATED_CITY,
+    ANNOTATED_COUNTRY_CODE,
+    ANNOTATED_LAT,
+    ANNOTATED_LON,
+    ANNOTATED_STATE_CODE,
+)
 from enums.openweather import OpenWeatherEndpoint
-from core.http_client import call_openweather_api
 from weather_mcp.server import mcp
-from weather_mcp.utils import check_geo, handle_error
+from weather_mcp.utils import call_openweather_api
 
 logger = logging.getLogger(__name__)
 
 
-def check_limit(limit: int | None):
-    """
-    Validate the limit parameter for geocoding requests.
-    Args:
-        limit (int | None): The limit value to check. If None, no validation is performed.
-    Raises:
-        ValueError: If limit is not None and is outside the range 1 to 5.
-    """
-    if limit is not None and (limit < 1 or limit > 5):
-        raise ValueError("Limit must be between 1 and 5")
+ANNOTATED_LIMIT = Annotated[
+    Optional[int],
+    Field(
+        default=5,
+        ge=1,
+        le=5,
+        description="Maximum number of results to return",
+    ),
+]
+
+
+async def _get_geo_by_location(
+    city: str,
+    state_code: str,
+    country_code: str,
+    mcp_ctx: Context,
+    limit: int | None = 5,
+) -> dict[str, Any]:
+    params = {"q": f"{city},{state_code},{country_code}", "limit": limit}
+
+    return await call_openweather_api(
+        OpenWeatherEndpoint.DIRECT_GEOCODING, params, mcp_ctx=mcp_ctx
+    )
 
 
 @mcp.tool()
-async def get_direct_geo_by_location(
-    city: str, state_code: str, country_code: str, limit: int | None = None
-) -> dict:
+async def get_geo_by_location(
+    ctx: Context,
+    city: ANNOTATED_CITY,
+    state_code: ANNOTATED_STATE_CODE,
+    country_code: ANNOTATED_COUNTRY_CODE,
+    limit: ANNOTATED_LIMIT = 5,
+) -> dict[str, Any]:
     """
     **Function Description**
     Retrieves geographical coordinates and location data for a specified city using direct geocoding.
@@ -54,13 +81,13 @@ async def get_direct_geo_by_location(
     **Usage Examples**
     ```python
     # Basic city lookup
-    result = await get_direct_geo_by_location("New York", "NY", "US")
+    result = await get_geo_by_location("New York", "NY", "US")
 
     # Limited results
-    result = await get_direct_geo_by_location("London", "ENG", "GB", limit=1)
+    result = await get_geo_by_location("London", "ENG", "GB", limit=1)
 
     # International location
-    result = await get_direct_geo_by_location("Tokyo", "13", "JP", limit=3)
+    result = await get_geo_by_location("Tokyo", "13", "JP", limit=3)
 
     # Extract coordinates
     coords = result[0] if result else None
@@ -70,7 +97,7 @@ async def get_direct_geo_by_location(
 
     **MCP Integration Notes**
     - This tool is automatically exposed to MCP clients when the server starts
-    - Tool name in MCP: "get_direct_geo_by_location"
+    - Tool name in MCP: "get_geo_by_location"
     - All parameters are passed as JSON objects from MCP clients
     - Return values are automatically serialized to JSON for MCP transport
     - Error handling follows MCP protocol standards with proper error codes
@@ -92,21 +119,17 @@ async def get_direct_geo_by_location(
     - Real estate: Normalize property location data
     - Emergency services: Quick location lookup for dispatch systems
     """
-    check_limit(limit)
-
-    params = {"q": f"{city},{state_code},{country_code}"}
-    if limit is not None:
-        params["limit"] = str(limit)
-
-    try:
-        return await call_openweather_api(OpenWeatherEndpoint.DIRECT_GEOCODING, params)
-    except Exception as e:
-        raise handle_error(e)
+    return await _get_geo_by_location(
+        city, state_code, country_code, limit=limit, mcp_ctx=ctx
+    )
 
 
 @mcp.tool()
-async def get_direct_geo_by_coordinates(
-    lat: float, lon: float, limit: int | None = None
+async def get_localtion_by_geo(
+    ctx: Context,
+    lat: ANNOTATED_LAT,
+    lon: ANNOTATED_LON,
+    limit: ANNOTATED_LIMIT = 5,
 ) -> dict:
     """
     **Function Description**
@@ -138,10 +161,10 @@ async def get_direct_geo_by_coordinates(
     **Usage Examples**
     ```python
     # Reverse geocode coordinates
-    result = await get_direct_geo_by_coordinates(40.7128, -74.0060)  # NYC
+    result = await get_localtion_by_geo(40.7128, -74.0060)  # NYC
 
     # With result limit
-    result = await get_direct_geo_by_coordinates(51.5074, -0.1278, limit=1)  # London
+    result = await get_localtion_by_geo(51.5074, -0.1278, limit=1)  # London
 
     # Process results
     if result:
@@ -150,7 +173,7 @@ async def get_direct_geo_by_coordinates(
 
     # GPS coordinates from mobile device
     user_lat, user_lon = get_device_location()
-    nearby_places = await get_direct_geo_by_coordinates(user_lat, user_lon, limit=5)
+    nearby_places = await get_localtion_by_geo(user_lat, user_lon, limit=5)
     ```
 
     **MCP Integration Notes**
@@ -180,13 +203,8 @@ async def get_direct_geo_by_coordinates(
     - Fleet management: Convert vehicle positions to understandable locations
     - Social media: Tag posts with location names from GPS data
     """
-    check_geo(lat, lon)
+    params = {"lat": lat, "lon": lon, "limit": limit}
 
-    params = {"lat": lat, "lon": lon}
-    if limit is not None:
-        params["limit"] = limit
-
-    try:
-        return await call_openweather_api(OpenWeatherEndpoint.CURRENT_WEATHER, params)
-    except Exception as e:
-        raise handle_error(e)
+    return await call_openweather_api(
+        OpenWeatherEndpoint.REVERSE_GEOCODING, params, mcp_ctx=ctx
+    )

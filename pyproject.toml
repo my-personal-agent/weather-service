@@ -25,6 +25,23 @@ black = "^25.1.0"
 ruff = "^0.11.12"
 mypy = "^1.16.0"
 mcp = { extras = ["cli"], version = "^1.9.2" }
+pytest = "^8.4.0"
+pytest-asyncio = "^1.0.0"
+pytest-env = "^1.1.5"
+pytest-cov = "^6.1.1"
+
+[tool.pytest.ini_options]
+env = [
+    "ENV=local",
+]
+
+[tool.mypy]
+namespace_packages = true
+explicit_package_bases = true
+mypy_path = ["src", "tests"]
+
+[tool.coverage.run]
+omit = ["*/__init__.py", "main.py"]
 
 [build-system]
 requires = ["poetry-core>=1.5.0"]

@@ -1,11 +1,26 @@
+from typing import Any
+
+from mcp.server.fastmcp import Context
+
+from core.annotated import (
+    ANNOTATED_CITY,
+    ANNOTATED_LANG,
+    ANNOTATED_LAT,
+    ANNOTATED_LON,
+    ANNOTATED_OPTIONAL_COUNTRY_CODE,
+)
 from enums.openweather import OpenWeatherEndpoint
-from core.http_client import call_openweather_api
 from weather_mcp.server import mcp
-from weather_mcp.utils import check_geo, handle_error
+from weather_mcp.utils import call_openweather_api
 
 
 @mcp.tool()
-async def get_forecast_by_geo(lat: float, lon: float, lang: str = "en") -> dict:
+async def get_forecast_by_geo(
+    ctx: Context,
+    lat: ANNOTATED_LAT,
+    lon: ANNOTATED_LON,
+    lang: ANNOTATED_LANG = "en",
+) -> dict[str, Any]:
     """
     Get 5-day weather forecast with 3-hour intervals for a specific geographic location using coordinates.
 
@@ -181,20 +196,17 @@ async def get_forecast_by_geo(lat: float, lon: float, lang: str = "en") -> dict:
         - Smart city systems for traffic management and public safety planning
         - Marine and aviation weather services requiring intermediate-term detailed forecasts
     """
-    check_geo(lat, lon)
     params = {"lat": lat, "lon": lon, "lang": lang}
-
-    try:
-        return await call_openweather_api(OpenWeatherEndpoint.FORECAST, params)
-
-    except Exception as e:
-        raise handle_error(e)
+    return await call_openweather_api(OpenWeatherEndpoint.FORECAST, params, mcp_ctx=ctx)
 
 
 @mcp.tool()
 async def get_forecast_by_city(
-    city: str, country_code: str | None = None, lang: str = "en"
-) -> dict:
+    ctx: Context,
+    city: ANNOTATED_CITY,
+    country_code: ANNOTATED_OPTIONAL_COUNTRY_CODE = None,
+    lang: ANNOTATED_LANG = "en",
+) -> dict[str, Any]:
     """
     Get 5-day weather forecast with 3-hour intervals for a city by name with optional country specification.
 
@@ -384,11 +396,6 @@ async def get_forecast_by_city(
         - Emergency management systems for multi-city weather preparedness and response planning
     """
     location = f"{city},{country_code}" if country_code else city
-
     params = {"q": location, "lang": lang}
 
-    try:
-        return await call_openweather_api(OpenWeatherEndpoint.FORECAST, params)
-
-    except Exception as e:
-        raise handle_error(e)
+    return await call_openweather_api(OpenWeatherEndpoint.FORECAST, params, mcp_ctx=ctx)

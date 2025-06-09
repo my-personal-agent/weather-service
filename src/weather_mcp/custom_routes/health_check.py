@@ -14,8 +14,7 @@ from prometheus_client import (
 from starlette.requests import Request
 from starlette.responses import JSONResponse, PlainTextResponse
 
-from core.http_client import call_openweather_api
-from enums.openweather import OpenWeatherEndpoint
+from config.settings_config import get_settings
 from weather_mcp.server import mcp
 
 logger = logging.getLogger(__name__)
@@ -56,12 +55,16 @@ async def readyz(request: Request) -> JSONResponse:
     logger.debug("Readiness check endpoint called")
     try:
         location = "Tokyo,JP"
+        params = {"q": location, "appid": get_settings().openweather_api_key}
 
-        params = {"q": location}
+        async with httpx.AsyncClient(timeout=2.0) as client:
+            response = await client.get(
+                get_settings().openweather_base_url, params=params
+            )
 
-        await call_openweather_api(OpenWeatherEndpoint.CURRENT_WEATHER, params)
+            # Raise error for any HTTP response with 4xx or 5xx status
+            response.raise_for_status()
 
-        logger.debug("Weather API check passed for location %s", location)
         return JSONResponse(status_code=200, content={"status": "ready"})
 
     except httpx.HTTPStatusError:
