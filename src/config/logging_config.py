@@ -41,11 +41,5 @@ def setup_logging():
     else:
         config = base_config
 
-    # Ensure directories for file handlers exist
-    for handler in config.get("handlers", {}).values():
-        filename = handler.get("filename")
-        if filename:
-            Path(filename).parent.mkdir(parents=True, exist_ok=True)
-
     # Apply the logging configuration
     logging.config.dictConfig(config)
