@@ -36,31 +36,6 @@ ingress:
   enabled: false
   host: ""
 
-monitoring:
-  enabled: true
-  serviceMonitor:
-    enabled: true
-    interval: 15s
-    scrapeTimeout: 10s
-    port: http
-  prometheusRule:
-    enabled: true
-    alerts:
-      - alert: WeatherMCPDown
-        expr: 'up{job=~".*weather.*"} == 0'
-        for: 2m
-        severity: critical
-        summary: "Weather MCP is down"
-        description: "Weather MCP instance is unreachable for 2 minutes."
-
-      - alert: WeatherMCPUnready
-        expr: 'kube_pod_container_status_ready{container="weather-mcp"} == 0'
-        for: 2m
-        severity: warning
-        summary: "Weather MCP pod is not ready"
-        description: "Weather MCP pod has been unready for more than 2 minutes."
-
-
 autoscaling:
   enabled: true
   minReplicas: 2
@@ -74,3 +49,29 @@ autoscaling:
         averageValue: "10"
       - name: latency_milliseconds
         averageValue: "200"
+
+monitoring:
+  alerts:
+    enabled: true
+    rules:
+      - alert: HighRequestLatency
+        expr: >
+          histogram_quantile(0.95,
+            sum(rate(http_request_duration_seconds_bucket{job="weather-mcp"}[5m]))
+            by (le)
+          ) > 1.5
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High latency for Weather MCP"
+          description: "p95 latency is above 1500ms"
+
+      - alert: WeatherMcpDown
+        expr: up{job="weather-mcp"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Weather MCP is down"
+          description: "Instance {{ $labels.instance }} is not responding."
