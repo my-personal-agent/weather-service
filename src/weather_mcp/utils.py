@@ -1,4 +1,3 @@
-import json
 import logging
 from typing import Any
 
@@ -45,13 +44,10 @@ async def call_openweather_api(
 
     # logging the call
     await mcp_ctx.info(
-        "Calling OpenWeather API",
-        params=params,
-        extra={"request_id": mcp_ctx.request_id, "client_id": mcp_ctx.client_id},
+        f"Calling OpenWeather API with params (request_id={mcp_ctx.request_id}, client_id={mcp_ctx.client_id}) : {params}"
     )
     logger.info(
-        "Calling OpenWeather API with params:\n%s",
-        json.dumps(params, indent=2, ensure_ascii=False),
+        f"Calling OpenWeather API with params : {params}",
         extra={
             "request_id": mcp_ctx.request_id,
             "client_id": mcp_ctx.client_id,
@@ -93,19 +89,13 @@ async def call_openweather_api(
 
             # log and report progress for successful response
             await mcp_ctx.info(
-                "OpenWeather API response",
-                data=data,
-                extra={
-                    "request_id": mcp_ctx.request_id,
-                    "client_id": mcp_ctx.client_id,
-                },
+                f"OpenWeather API response (request_id={mcp_ctx.request_id}, client_id={mcp_ctx.client_id}) : {data}"
             )
             await mcp_ctx.report_progress(
                 100, total=100, message="OpenWeather API call successful"
             )
             logger.info(
-                "OpenWeather API response:\n%s",
-                json.dumps(data, indent=2, ensure_ascii=False),
+                f"OpenWeather API response : {data}",
                 extra={
                     "request_id": mcp_ctx.request_id,
                     "client_id": mcp_ctx.client_id,
@@ -118,13 +108,11 @@ async def call_openweather_api(
     except httpx.HTTPStatusError as e:
         # Log HTTP error response
         logger.warning(
-            "OpenWeather API error",
-            exc_info=e,
+            f"OpenWeather API error: {e}",
             extra={"request_id": mcp_ctx.request_id, "client_id": mcp_ctx.client_id},
         )
         await mcp_ctx.warning(
-            "OpenWeather API error",
-            extra={"request_id": mcp_ctx.request_id, "client_id": mcp_ctx.client_id},
+            f"OpenWeather API error (request_id={mcp_ctx.request_id}, client_id={mcp_ctx.client_id})"
         )
         if e.response.status_code == 404:
             raise ToolError("Weather data not found for the given location.")
@@ -134,13 +122,11 @@ async def call_openweather_api(
     except httpx.RequestError as e:
         # Log network or connection error
         logger.error(
-            "OpenWeather API request error",
-            exc_info=e,
+            f"OpenWeather API request error: {e}",
             extra={"request_id": mcp_ctx.request_id, "client_id": mcp_ctx.client_id},
         )
         await mcp_ctx.error(
-            "OpenWeather API request error",
-            extra={"request_id": mcp_ctx.request_id, "client_id": mcp_ctx.client_id},
+            f"OpenWeather API request error (request_id={mcp_ctx.request_id}, client_id={mcp_ctx.client_id})"
         )
 
         raise ToolError("An unexpected error occurred.")

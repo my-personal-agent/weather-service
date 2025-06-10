@@ -38,20 +38,10 @@ class TestCallOpenWeatherApi:
 
         # Verify context logging calls
         mock_context.info.assert_any_call(
-            "Calling OpenWeather API",
-            params=params,
-            extra={
-                "request_id": mock_context.request_id,
-                "client_id": mock_context.client_id,
-            },
+            f"Calling OpenWeather API with params (request_id={mock_context.request_id}, client_id={mock_context.client_id}) : {params}"
         )
         mock_context.info.assert_any_call(
-            "OpenWeather API response",
-            data=sample_weather_response,
-            extra={
-                "request_id": mock_context.request_id,
-                "client_id": mock_context.client_id,
-            },
+            f"OpenWeather API response (request_id={mock_context.request_id}, client_id={mock_context.client_id}) : {sample_weather_response}"
         )
 
         # Verify progress reporting

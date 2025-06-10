@@ -23,18 +23,18 @@ for filename in os.listdir(custom_routes_dir):
         try:
             # Perform a relative import using importlib
             importlib.import_module(f".{module_name}", package=__name__)
-            logger.info(f"✅ Registered custom routes module: {module_name}")
+            logger.info(f"Registered custom routes module: {module_name}")
             registered_modules.append(module_name)
 
         except Exception as e:
             logger.error(
-                f"❌ Failed to import custom routes module '{module_name}': {type(e).__name__}: {e}"
+                f"Failed to import custom routes module '{module_name}': {type(e).__name__}: {e}"
             )
 
 # Summary log after all modules are processed
 if registered_modules:
     logger.info(
-        f"🔧 Auto-registration complete. Loaded custom routes: {', '.join(registered_modules)}"
+        f"Auto-registration complete. Loaded custom routes: {', '.join(registered_modules)}"
     )
 else:
-    logger.warning("⚠️ No custom routes were successfully registered.")
+    logger.warning("No custom routes were successfully registered.")

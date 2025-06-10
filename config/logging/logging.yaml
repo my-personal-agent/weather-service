@@ -3,10 +3,10 @@ disable_existing_loggers: False
 
 formatters:
   default:
-    format: "[%(asctime)s] [%(levelname)s] %(name)s: %(message)s"
+    format: "%(asctime)s [%(levelname)s] %(name)s : %(message)s"
   json:
     class: pythonjsonlogger.json.JsonFormatter
-    format: "%(asctime)s %(levelname)s %(name)s %(message)s"
+    format: "%(asctime)s %(levelname)s %(name)s %(message)s %(request_id)s %(client_id)s"
 
 handlers:
   console:
@@ -15,22 +15,16 @@ handlers:
     formatter: json
     stream: ext://sys.stdout
 
-  file:
-    class: logging.handlers.TimedRotatingFileHandler
-    level: INFO
-    formatter: json
-    filename: logs/app.log
-    when: midnight
-    interval: 1
-    backupCount: 7
-    encoding: utf-8
-    utc: true
-
 loggers:
   app:
     handlers: [console]
     level: INFO
     propagate: False
+
+  httpx:
+    level: WARNING
+    handlers: [console]
+    propagate: no
 
 root:
   level: INFO

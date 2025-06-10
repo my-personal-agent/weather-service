@@ -1,7 +1,0 @@
-handlers:
-  console:
-    formatter: default
-    stream: ext://sys.stdout
-
-  file:
-    formatter: default

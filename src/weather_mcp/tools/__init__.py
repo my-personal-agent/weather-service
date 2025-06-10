@@ -23,18 +23,18 @@ for filename in os.listdir(tools_dir):
         try:
             # Perform a relative import using importlib
             importlib.import_module(f".{module_name}", package=__name__)
-            logger.info(f"✅ Registered tool module: {module_name}")
+            logger.info(f"Registered tool module: {module_name}")
             registered_modules.append(module_name)
 
         except Exception as e:
             logger.error(
-                f"❌ Failed to import tool module '{module_name}': {type(e).__name__}: {e}"
+                f"Failed to import tool module '{module_name}': {type(e).__name__}: {e}"
             )
 
 # Summary log after all modules are processed
 if registered_modules:
     logger.info(
-        f"🔧 Auto-registration complete. Loaded tools: {', '.join(registered_modules)}"
+        f"Auto-registration complete. Loaded tools: {', '.join(registered_modules)}"
     )
 else:
-    logger.warning("⚠️ No tool modules were successfully registered.")
+    logger.warning("No tool modules were successfully registered.")
