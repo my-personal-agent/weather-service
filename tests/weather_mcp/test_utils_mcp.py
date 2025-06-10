@@ -37,15 +37,33 @@ class TestCallOpenWeatherApi:
         assert result == sample_weather_response
 
         # Verify context logging calls
-        mock_context.info.assert_any_call("Calling OpenWeather API", params=params)
         mock_context.info.assert_any_call(
-            "OpenWeather API response", data=sample_weather_response
+            "Calling OpenWeather API",
+            params=params,
+            extra={
+                "request_id": mock_context.request_id,
+                "client_id": mock_context.client_id,
+            },
+        )
+        mock_context.info.assert_any_call(
+            "OpenWeather API response",
+            data=sample_weather_response,
+            extra={
+                "request_id": mock_context.request_id,
+                "client_id": mock_context.client_id,
+            },
         )
 
         # Verify progress reporting
         assert mock_context.report_progress.call_count == 4
         mock_context.report_progress.assert_any_call(
             10, total=100, message="Preparing OpenWeather API request"
+        )
+        mock_context.report_progress.assert_any_call(
+            30, total=100, message="Calling OpenWeather API request"
+        )
+        mock_context.report_progress.assert_any_call(
+            80, total=100, message="OpenWeather API request completed"
         )
         mock_context.report_progress.assert_any_call(
             100, total=100, message="OpenWeather API call successful"

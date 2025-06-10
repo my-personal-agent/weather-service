@@ -7,8 +7,7 @@ handlers:
 
 loggers:
   app:
-    handlers: [console]
+    level: DEBUG
 
 root:
   level: DEBUG
-  handlers: [console]

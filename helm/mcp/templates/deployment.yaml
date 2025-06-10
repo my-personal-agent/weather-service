@@ -4,6 +4,7 @@ metadata:
   name: {{ include "weather-mcp.fullname" . }}
   labels:
     {{- include "weather-mcp.labels" . | nindent 4 }}
+    logging: loki
 spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}

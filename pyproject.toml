@@ -8,7 +8,8 @@ packages = [
     { include = "weather_mcp", from = "src" },
     { include = "config", from = "src" },
     { include = "enums", from = "src" },
-    { include = "utils", from = "src" }
+    { include = "utils", from = "src" },
+    { include = "middleware", from = "src" }
 ]
 
 [tool.poetry.dependencies]

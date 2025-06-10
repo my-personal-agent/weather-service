@@ -28,10 +28,10 @@ handlers:
 
 loggers:
   app:
-    handlers: [file]
+    handlers: [console]
     level: INFO
     propagate: False
 
 root:
   level: INFO
-  handlers: [file]
+  handlers: [console]

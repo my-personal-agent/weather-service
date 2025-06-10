@@ -1,3 +1,4 @@
+import json
 import logging
 from typing import Any
 
@@ -33,9 +34,6 @@ async def call_openweather_api(
         httpx.HTTPStatusError: If the API responds with a 4xx or 5xx error.
         httpx.RequestError: If the request fails due to network issues, timeouts, etc.
     """
-    # logging the call
-    await mcp_ctx.info("Calling OpenWeather API", params=params)
-
     # Construct full URL to the specific OpenWeather endpoint
     url = (
         get_settings().openweather_geo_base_url
@@ -44,6 +42,21 @@ async def call_openweather_api(
         else get_settings().openweather_base_url
     )
     url = f"{url.rstrip('/')}/{endpoint.value}"
+
+    # logging the call
+    await mcp_ctx.info(
+        "Calling OpenWeather API",
+        params=params,
+        extra={"request_id": mcp_ctx.request_id, "client_id": mcp_ctx.client_id},
+    )
+    logger.info(
+        "Calling OpenWeather API with params:\n%s",
+        json.dumps(params, indent=2, ensure_ascii=False),
+        extra={
+            "request_id": mcp_ctx.request_id,
+            "client_id": mcp_ctx.client_id,
+        },
+    )
 
     # Copy original params to avoid mutating caller input
     user_params = params.copy()
@@ -58,9 +71,6 @@ async def call_openweather_api(
     )
 
     try:
-        # Log outbound request
-        logger.info(f"Calling OpenWeather API [{endpoint.value}] with params: {params}")
-
         # report progress for API call
         await mcp_ctx.report_progress(
             30, total=100, message="Calling OpenWeather API request"
@@ -82,11 +92,25 @@ async def call_openweather_api(
             data = response.json()
 
             # log and report progress for successful response
-            await mcp_ctx.info("OpenWeather API response", data=data)
+            await mcp_ctx.info(
+                "OpenWeather API response",
+                data=data,
+                extra={
+                    "request_id": mcp_ctx.request_id,
+                    "client_id": mcp_ctx.client_id,
+                },
+            )
             await mcp_ctx.report_progress(
                 100, total=100, message="OpenWeather API call successful"
             )
-            logger.info(f"OpenWeather API [{endpoint.value}] response: {data}")
+            logger.info(
+                "OpenWeather API response:\n%s",
+                json.dumps(data, indent=2, ensure_ascii=False),
+                extra={
+                    "request_id": mcp_ctx.request_id,
+                    "client_id": mcp_ctx.client_id,
+                },
+            )
 
             # Return parsed JSON data
             return data
@@ -94,10 +118,13 @@ async def call_openweather_api(
     except httpx.HTTPStatusError as e:
         # Log HTTP error response
         logger.warning(
-            f"OpenWeather API error {e.response.status_code}: {e.response.text}"
+            "OpenWeather API error",
+            exc_info=e,
+            extra={"request_id": mcp_ctx.request_id, "client_id": mcp_ctx.client_id},
         )
         await mcp_ctx.warning(
-            f"OpenWeather API error {e.response.status_code}: {e.response.text}"
+            "OpenWeather API error",
+            extra={"request_id": mcp_ctx.request_id, "client_id": mcp_ctx.client_id},
         )
         if e.response.status_code == 404:
             raise ToolError("Weather data not found for the given location.")
@@ -106,7 +133,14 @@ async def call_openweather_api(
 
     except httpx.RequestError as e:
         # Log network or connection error
-        logger.error(f"OpenWeather API request error {url}: {e}")
-        await mcp_ctx.error(f"OpenWeather API request error: {e}")
+        logger.error(
+            "OpenWeather API request error",
+            exc_info=e,
+            extra={"request_id": mcp_ctx.request_id, "client_id": mcp_ctx.client_id},
+        )
+        await mcp_ctx.error(
+            "OpenWeather API request error",
+            extra={"request_id": mcp_ctx.request_id, "client_id": mcp_ctx.client_id},
+        )
 
         raise ToolError("An unexpected error occurred.")

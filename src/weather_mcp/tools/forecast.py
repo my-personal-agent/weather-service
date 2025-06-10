@@ -1,3 +1,4 @@
+import logging
 from typing import Any
 
 from mcp.server.fastmcp import Context
@@ -12,6 +13,8 @@ from core.annotated import (
 from enums.openweather import OpenWeatherEndpoint
 from weather_mcp.server import mcp
 from weather_mcp.utils import call_openweather_api
+
+logger = logging.getLogger(__name__)
 
 
 @mcp.tool()
