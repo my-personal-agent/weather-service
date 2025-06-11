@@ -6,14 +6,14 @@ from prometheus_client import CONTENT_TYPE_LATEST
 from starlette.requests import Request
 from starlette.responses import JSONResponse, PlainTextResponse
 
-from weather_mcp.custom_routes.health_check import healthz, metrics_endpoint, readyz
+from weather_mcp.custom_routes.server_info import healthz, metrics_endpoint, readyz
 
 
 class TestHealthzEndpoint:
     """Test suite for /healthz endpoint"""
 
     @pytest.mark.asyncio
-    @patch("weather_mcp.custom_routes.health_check.logger")
+    @patch("weather_mcp.custom_routes.server_info.logger")
     async def test_healthz_success(self, mock_logger):
         """Test that healthz endpoint returns 200 OK with correct status"""
         # Create a mock request
@@ -36,7 +36,7 @@ class TestReadyzEndpoint:
 
     @pytest.mark.asyncio
     @patch("httpx.AsyncClient")
-    @patch("weather_mcp.custom_routes.health_check.logger")
+    @patch("weather_mcp.custom_routes.server_info.logger")
     async def test_readyz_success(self, mock_logger, mock_client_class):
         """Test readyz endpoint when OpenWeather API is available"""
         # Create a mock response
@@ -69,7 +69,7 @@ class TestReadyzEndpoint:
 
     @pytest.mark.asyncio
     @patch("httpx.AsyncClient")
-    @patch("weather_mcp.custom_routes.health_check.logger")
+    @patch("weather_mcp.custom_routes.server_info.logger")
     async def test_readyz_http_status_error(self, mock_logger, mock_client_class):
         """Test readyz endpoint when OpenWeather API returns HTTP error"""
         # Simulate an HTTP error from the OpenWeather API
@@ -92,7 +92,7 @@ class TestReadyzEndpoint:
 
     @pytest.mark.asyncio
     @patch("httpx.AsyncClient")
-    @patch("weather_mcp.custom_routes.health_check.logger")
+    @patch("weather_mcp.custom_routes.server_info.logger")
     async def test_readyz_request_error(self, mock_logger, mock_client_class):
         """Test readyz endpoint when OpenWeather API has connection issues"""
         mock_error = httpx.RequestError("Connection timeout")
@@ -123,9 +123,9 @@ class TestMetricsEndpoint:
         return mock_proc
 
     @pytest.mark.asyncio
-    @patch("weather_mcp.custom_routes.health_check.logger")
-    @patch("weather_mcp.custom_routes.health_check.generate_latest")
-    @patch("weather_mcp.custom_routes.health_check.psutil.Process")
+    @patch("weather_mcp.custom_routes.server_info.logger")
+    @patch("weather_mcp.custom_routes.server_info.generate_latest")
+    @patch("weather_mcp.custom_routes.server_info.psutil.Process")
     async def test_metrics_endpoint_success(
         self, mock_psutil_process, mock_generate, mock_logger, mock_process_data
     ):
@@ -152,9 +152,9 @@ class TestMetricsEndpoint:
         mock_generate.assert_called_once()
 
     @pytest.mark.asyncio
-    @patch("weather_mcp.custom_routes.health_check.memory_usage")
-    @patch("weather_mcp.custom_routes.health_check.generate_latest")
-    @patch("weather_mcp.custom_routes.health_check.psutil.Process")
+    @patch("weather_mcp.custom_routes.server_info.memory_usage")
+    @patch("weather_mcp.custom_routes.server_info.generate_latest")
+    @patch("weather_mcp.custom_routes.server_info.psutil.Process")
     async def test_metrics_endpoint_sets_memory_usage(
         self, mock_psutil_process, mock_generate, mock_memory_gauge, mock_process_data
     ):
@@ -169,9 +169,9 @@ class TestMetricsEndpoint:
         mock_memory_gauge.set.assert_called_once_with(1024 * 1024 * 100)
 
     @pytest.mark.asyncio
-    @patch("weather_mcp.custom_routes.health_check.cpu_usage")
-    @patch("weather_mcp.custom_routes.health_check.generate_latest")
-    @patch("weather_mcp.custom_routes.health_check.psutil.Process")
+    @patch("weather_mcp.custom_routes.server_info.cpu_usage")
+    @patch("weather_mcp.custom_routes.server_info.generate_latest")
+    @patch("weather_mcp.custom_routes.server_info.psutil.Process")
     async def test_metrics_endpoint_sets_cpu_usage(
         self, mock_psutil_process, mock_generate, mock_cpu_gauge, mock_process_data
     ):

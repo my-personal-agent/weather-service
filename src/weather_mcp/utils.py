@@ -35,10 +35,10 @@ async def call_openweather_api(
     """
     # Construct full URL to the specific OpenWeather endpoint
     url = (
-        get_settings().openweather_geo_base_url
+        str(get_settings().openweather_geo_base_url)
         if endpoint
         in [OpenWeatherEndpoint.DIRECT_GEOCODING, OpenWeatherEndpoint.REVERSE_GEOCODING]
-        else get_settings().openweather_base_url
+        else str(get_settings().openweather_base_url)
     )
     url = f"{url.rstrip('/')}/{endpoint.value}"
 

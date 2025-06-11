@@ -89,7 +89,7 @@ class TestCallOpenWeatherApi:
         # The URL should contain the geo base URL
         assert (
             call_args[0][0]
-            == get_settings().openweather_geo_base_url.rstrip("/") + "/direct"
+            == str(get_settings().openweather_geo_base_url).rstrip("/") + "/direct"
         )
 
     @pytest.mark.asyncio

@@ -59,7 +59,7 @@ async def readyz(request: Request) -> JSONResponse:
 
         async with httpx.AsyncClient(timeout=2.0) as client:
             response = await client.get(
-                get_settings().openweather_base_url, params=params
+                str(get_settings().openweather_base_url), params=params
             )
 
             # Raise error for any HTTP response with 4xx or 5xx status
@@ -97,5 +97,9 @@ async def metrics_endpoint(request: Request) -> PlainTextResponse:
 
 # Set server info
 server_info.info(
-    {"version": "1.0.0", "name": "Weather MCP", "transport": "streamable-http"}
+    {
+        "version": get_settings().mcp_project_version,
+        "name": get_settings().mcp_project_name,
+        "transport": get_settings().mcp_transport.value,
+    }
 )
