@@ -28,7 +28,6 @@ class Settings(BaseSettings):
         env_file_encoding = "utf-8"
 
     @computed_field
-    @property
     def mcp_project_info(self) -> str:
         return f"{self.mcp_project_name} - {self.mcp_project_version}"
 

@@ -36,11 +36,6 @@ loggers:
     handlers: [console]
     propagate: False
 
-  langchain_mcp_adapters:
-    level: INFO
-    handlers: [console]
-    propagate: False
-
 root:
   level: INFO
   handlers: [console]

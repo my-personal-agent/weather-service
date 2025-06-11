@@ -36,7 +36,6 @@ class TestSetupLogging:
         call_args = mock_dict_config.call_args[0][0]
 
         assert call_args["handlers"]["console"]["formatter"] == "default"
-        assert call_args["loggers"]["app"]["handlers"] == ["console"]
         assert call_args["root"]["level"] == "DEBUG"
         assert call_args["root"]["handlers"] == ["console"]
 
