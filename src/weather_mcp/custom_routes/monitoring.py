@@ -3,35 +3,15 @@ import os
 
 import httpx
 import psutil
-from prometheus_client import (
-    CONTENT_TYPE_LATEST,
-    Counter,
-    Gauge,
-    Histogram,
-    Info,
-    generate_latest,
-)
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from starlette.requests import Request
 from starlette.responses import JSONResponse, PlainTextResponse
 
 from config.settings_config import get_settings
+from core.monitoring import cpu_usage, memory_usage
 from weather_mcp.server import mcp
 
 logger = logging.getLogger(__name__)
-
-# Application metrics
-tool_calls_counter = Counter(
-    "mcp_tool_calls_total", "Total tool calls", ["tool_name", "status"]
-)
-tool_duration_histogram = Histogram(
-    "mcp_tool_duration_seconds", "Tool execution time", ["tool_name"]
-)
-active_connections = Gauge("mcp_active_connections", "Number of active MCP connections")
-server_info = Info("mcp_server_info", "Server information")
-
-# System metrics
-memory_usage = Gauge("mcp_memory_usage_bytes", "Memory usage in bytes")
-cpu_usage = Gauge("mcp_cpu_usage_percent", "CPU usage percentage")
 
 
 @mcp.custom_route("/healthz", methods=["GET"])
@@ -93,13 +73,3 @@ async def metrics_endpoint(request: Request) -> PlainTextResponse:
     return PlainTextResponse(
         generate_latest(), headers={"Content-Type": CONTENT_TYPE_LATEST}
     )
-
-
-# Set server info
-server_info.info(
-    {
-        "version": get_settings().mcp_project_version,
-        "name": get_settings().mcp_project_name,
-        "transport": get_settings().mcp_transport.value,
-    }
-)

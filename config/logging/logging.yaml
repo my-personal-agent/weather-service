@@ -16,15 +16,30 @@ handlers:
     stream: ext://sys.stdout
 
 loggers:
-  app:
-    handlers: [console]
-    level: INFO
-    propagate: False
-
   httpx:
-    level: WARNING
+    level: INFO
     handlers: [console]
     propagate: no
+
+  uvicorn:
+    level: INFO
+    handlers: [console]
+    propagate: False
+
+  uvicorn.access:
+    level: INFO
+    handlers: [console]
+    propagate: False
+
+  uvicorn.error:
+    level: INFO
+    handlers: [console]
+    propagate: False
+
+  langchain_mcp_adapters:
+    level: INFO
+    handlers: [console]
+    propagate: False
 
 root:
   level: INFO

@@ -38,3 +38,13 @@ class TestSettingsConfig:
             get_settings()
 
         assert exc_info.value.code == 1
+
+    def test_mcp_project_info_settings(self):
+        """Test MCP Project Info Settings"""
+
+        settings = get_settings()
+
+        assert (
+            settings.mcp_project_info
+            == f"{settings.mcp_project_name} - {settings.mcp_project_version}"
+        )
