@@ -1,0 +1,19 @@
+services:
+  weather-mcp:
+    build:
+      context: .
+      dockerfile: Docker/Dockerfile
+    container_name: weather-mcp-app
+    restart: unless-stopped
+    environment:
+      - ENV=local
+    env_file:
+      - .env
+    ports:
+      - "8001:8001"
+    networks:
+      - my-personal-ai-local
+
+networks:
+  my-personal-ai-local:
+    external: true
