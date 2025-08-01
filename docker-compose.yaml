@@ -1,5 +1,5 @@
 services:
-  weather-service:
+  weather-app:
     build:
       context: .
       dockerfile: Docker/Dockerfile
