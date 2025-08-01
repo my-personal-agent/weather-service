@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: Docker/Dockerfile
-    container_name: weather-mcp-app
+    container_name: weather-app
     restart: unless-stopped
     environment:
       - ENV=local
